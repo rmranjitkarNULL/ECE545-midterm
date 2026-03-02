@@ -26,12 +26,11 @@ def remove_red_lights(img):
     img = img.astype(np.float32)
     return img
 
-def adjust_white_balance(img):
-
+def adjust_white_balance(img, mask):
     # Compute average per channel
-    avg_b = np.mean(img[400:, :, 0])
-    avg_g = np.mean(img[400:, :, 1])
-    avg_r = np.mean(img[400:, :, 2])
+    avg_b = np.mean(img[:, :, 0][mask>0])
+    avg_g = np.mean(img[:, :, 1][mask>0])
+    avg_r = np.mean(img[:, :, 2][mask>0])
 
     # Compute scale factors
     avg_gray = (avg_b + avg_g + avg_r) / 3
@@ -49,15 +48,18 @@ def adjust_white_balance(img):
 
     return img
 
-def denoise(img):
+def denoise_sky(img):
+    # img[400:, :, :] = cv2.fastNlMeansDenoisingColored(img[400:, :, :], None, 0, 4)
     img[:400, :, :] = cv2.fastNlMeansDenoisingColored(img[:400, :, :], None, 10, 10)
-    img[400:, :, :] = cv2.fastNlMeansDenoisingColored(img[400:, :, :], None, 0, 4)
-    # img = cv2.fastNlMeansDenoisingColored(
-    #     img,
-    #     None,
-    #     h=10,        # Filter strength for luminance
-    #     hColor=10,   # Filter strength for color
-    #     templateWindowSize=7,
-    #     searchWindowSize=21
-    # )
     return img
+
+def denoise(img, sky_mask):
+    denoised = cv2.fastNlMeansDenoisingColored(img, None, 10, 10)
+    img[~sky_mask>0] = denoised[~sky_mask>0]
+    return img
+
+def denoise_final(img, sky_mask):
+    # denoised = cv2.fastNlMeansDenoisingColored(img, None, 0, 0)
+    # img[~sky_mask>0] = denoised[~sky_mask>0]
+    return img
+

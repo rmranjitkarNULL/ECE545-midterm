@@ -8,7 +8,7 @@ def get_sky_mask(img):
 
     # Preprocessing
     mask_img = img.copy()
-    mask_img = denoise(mask_img)
+    mask_img = denoise_sky(mask_img)
     mask_img = adjust_exposure(mask_img)
     mask_img = np.clip(mask_img, 0, 255).astype(np.uint8)
     mask_img = remove_red_lights(mask_img)
@@ -34,14 +34,14 @@ def enhance_image(img):
     sky_mask = get_sky_mask(img)
 
     # Denoise
-    img = denoise(img)
+    img = denoise(img, sky_mask)
     cv2.imwrite("outputs/denoise.png", img)
 
     # Convert image to float for more precision in adjustments
     img = img.astype(np.float32)
     img = adjust_exposure(img)
     img = remove_red_lights(img)
-    img = adjust_white_balance(img)
+    img = adjust_white_balance(img, ~sky_mask)
 
     # Color the sky blue LOL
     img[sky_mask > 0] = [150, 134, 114]
