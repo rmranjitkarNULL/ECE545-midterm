@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from diff_map import generate_diff_maps
+from sky_detection import detect_skyline
 from adjustments import *
 
 def enhance_image(im):
@@ -32,17 +33,33 @@ def calc_mse(im1, im2):
 
 if __name__ == "__main__":
 
-    img1 = cv2.imread("images/night.jpg")
-    img2 = cv2.imread("images/day.jpg")
+    # Import Image
+    img = cv2.imread("images/night.jpg")
 
-    img1 = denoise(img1)
-    cv2.imwrite("outputs/denoise.png", img1)
+    # Generate sky mask
+    _, sky_mask, _ = detect_skyline(
+        img,
+        gamma=1.5,
+        denoise_h=15,
+        top_bias=0.2,
+        smoothness=2.0,
+        max_jump=20
+    )
 
-    im_enhance = enhance_image(img1)
+    # Denoise
+    img = denoise(img)
+    cv2.imwrite("outputs/denoise.png", img)
 
-    # clip to 8-bit map
+    # Apply enhancements
+    im_enhance = enhance_image(img)
+
+    # Clip to 8-bit map
     im_enhance = np.clip(im_enhance, 0, 255).astype(np.uint8)
+    im_enhance[sky_mask > 0] = [200, 100, 100]
 
     cv2.imwrite("outputs/enhance.png", im_enhance)
+
+    # Calculate MSE
+    img2 = cv2.imread("images/day.jpg")
     calc_mse(im_enhance, img2)
     generate_diff_maps(im_enhance, img2)

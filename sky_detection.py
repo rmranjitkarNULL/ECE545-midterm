@@ -157,7 +157,7 @@ def skyline_to_mask(h: int, w: int, y_path: np.ndarray) -> np.ndarray:
     mask = np.zeros((h, w), dtype=np.uint8)
     for x in range(w):
         y = int(np.clip(y_path[x], 0, h - 1))
-        mask[:y, x] = 255
+        mask[:y, x] = True
     return mask
 
 
