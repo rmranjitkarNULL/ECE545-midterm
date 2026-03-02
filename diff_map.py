@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import os
+from pathlib import Path
 
 def generate_diff_maps(im1, im2, output_dir="outputs"):
     assert im1.shape == im2.shape
@@ -21,10 +21,11 @@ def generate_diff_maps(im1, im2, output_dir="outputs"):
     sq_b_vis = normalize(mse_b)
 
 # save grayscale images
-    os.mkdir(output_dir)
-    cv2.imwrite(f"{output_dir}/mse_red.png", sq_r_vis)
-    cv2.imwrite(f"{output_dir}/mse_green.png", sq_g_vis)
-    cv2.imwrite(f"{output_dir}/mse_blue.png", sq_b_vis)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(output_dir/"mse_red.png", sq_r_vis)
+    cv2.imwrite(output_dir/"mse_green.png", sq_g_vis)
+    cv2.imwrite(output_dir/"mse_blue.png", sq_b_vis)
 
 if __name__ == "__main__":
     night = cv2.imread("images/basic_ps.jpg").astype(np.float32)
