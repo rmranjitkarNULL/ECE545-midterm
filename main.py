@@ -46,6 +46,10 @@ def enhance_image(img):
     img = brighten_ground(img, ~sky_mask)
     img = adjust_white_balance(img, ~sky_mask)
 
+    img = denoise_final(img, sky_mask)
+
+    # img = test_reflect(img)
+
     # Color the sky blue LOL
     img[sky_mask > 0] = [150, 134, 114]
 
