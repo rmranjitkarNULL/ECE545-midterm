@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
 def preprocess_night(img_bgr: np.ndarray,
@@ -155,7 +156,7 @@ def skyline_to_mask(h: int, w: int, y_path: np.ndarray) -> np.ndarray:
     mask = np.zeros((h, w), dtype=np.uint8)
     for x in range(w):
         y = int(np.clip(y_path[x], 0, h - 1))
-        mask[:y, x] = True
+        mask[:y, x] = 255
     return mask
 
 
@@ -198,9 +199,10 @@ def detect_skyline(img_bgr: np.ndarray,
 
 if __name__ == "__main__":
     import argparse
+    import matplotlib.pyplot as plt
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", required=True, help="Path to input image")
-    parser.add_argument("--out_prefix", default="skyline", help="Output prefix")
     args = parser.parse_args()
 
     img = cv2.imread(args.image)
@@ -209,17 +211,38 @@ if __name__ == "__main__":
 
     y_path, sky_mask, dbg = detect_skyline(
         img,
-        gamma=1.5,          # gamma: How bright the 
-        denoise_h=15,       # denoise_h: Parameter for NLM denoising
-        top_bias=0.2,       # top_bias: How much we favor the top of the image
-        smoothness=2.0,     # smoothness: How smooth we want the skyline to be
-        max_jump=30         # max_jump: How big peaks can be
+        gamma=1.5,
+        denoise_h=15,
+        top_bias=0.2,
+        smoothness=2.0,
+        max_jump=30
     )
 
-    cv2.imwrite(f"{args.out_prefix}_mask.png", sky_mask)
-    cv2.imwrite(f"{args.out_prefix}_overlay.png", dbg["overlay"])
-    print("Wrote:",
-          f"{args.out_prefix}_mask.png,",
-          f"{args.out_prefix}_overlay.png,",
-          f"{args.out_prefix}_energy.png,",
-          f"{args.out_prefix}_gray.png")
+    # Convert BGR → RGB for matplotlib
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    overlay_rgb = cv2.cvtColor(dbg["overlay"], cv2.COLOR_BGR2RGB)
+
+    plt.figure(figsize=(14, 8))
+
+    plt.subplot(2, 2, 1)
+    plt.title("Original")
+    plt.imshow(img_rgb)
+    plt.axis("off")
+
+    plt.subplot(2, 2, 2)
+    plt.title("Energy Map")
+    plt.imshow(dbg["energy"], cmap="inferno")
+    plt.axis("off")
+
+    plt.subplot(2, 2, 3)
+    plt.title("Sky Mask")
+    plt.imshow(sky_mask, cmap="gray")
+    plt.axis("off")
+
+    plt.subplot(2, 2, 4)
+    plt.title("Overlay")
+    plt.imshow(overlay_rgb)
+    plt.axis("off")
+
+    plt.tight_layout()
+    plt.show()
