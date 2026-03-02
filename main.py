@@ -41,6 +41,9 @@ def enhance_image(img):
     img = img.astype(np.float32)
     img = adjust_exposure(img)
     img = remove_red_lights(img)
+
+    # Ground Adjustments
+    img = brighten_ground(img, ~sky_mask)
     img = adjust_white_balance(img, ~sky_mask)
 
     # Color the sky blue LOL

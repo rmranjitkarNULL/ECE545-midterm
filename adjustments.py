@@ -5,6 +5,28 @@ def adjust_exposure(img):
     img = 16*np.sqrt(img)
     return img
 
+def brighten_ground(img, mask):
+    img[mask>0] += 16
+    img = np.clip(img, 0, 255).astype(np.uint8)
+    return img
+
+    # ----- Experimental stuff, didn't work :/
+    # lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    # l, a, b = cv2.split(lab)
+    #
+    # clahe = cv2.createCLAHE(1.0, (8,8))
+    # l = clahe.apply(l)
+    #
+    # lab = cv2.merge((l,a,b))
+    # result = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+    #
+    # print(result.shape)
+    # print(img.shape)
+    # print(mask.shape)
+    #
+    # img[mask>0] = result[mask>0]
+    # return img
+
 def remove_red_lights(img):
     # Convert to HSV
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -27,6 +49,7 @@ def remove_red_lights(img):
     return img
 
 def adjust_white_balance(img, mask):
+    img = img.astype(np.float32)
     # Compute average per channel
     avg_b = np.mean(img[:, :, 0][mask>0])
     avg_g = np.mean(img[:, :, 1][mask>0])
