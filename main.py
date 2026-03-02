@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     # Clip to 8-bit map
     im_enhance = np.clip(im_enhance, 0, 255).astype(np.uint8)
-    im_enhance[sky_mask > 0] = [200, 100, 100]
+    im_enhance[sky_mask > 0] = [150, 134, 114]
 
     cv2.imwrite("outputs/enhance.png", im_enhance)
 
