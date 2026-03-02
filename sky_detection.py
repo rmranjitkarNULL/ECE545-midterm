@@ -6,7 +6,7 @@ def preprocess_night(img_bgr: np.ndarray,
                      use_clahe: bool = True,
                      gamma: float = 1.4,
                      denoise_h: int = 10) -> np.ndarray:
-    """
+    """ 
     Returns a preprocessed grayscale image for skyline detection.
     - CLAHE on L-channel helps local contrast
     - Gamma brightening helps separate dark sky/buildings
@@ -211,11 +211,11 @@ if __name__ == "__main__":
 
     y_path, sky_mask, dbg = detect_skyline(
         img,
-        gamma=1.8,
+        gamma=1.5,
         denoise_h=15,
         top_bias=0.2,
-        smoothness=1.8,
-        max_jump=12
+        smoothness=2.0,
+        max_jump=20
     )
 
     cv2.imwrite(f"{args.out_prefix}_mask.png", sky_mask)
