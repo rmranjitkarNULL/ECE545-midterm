@@ -53,33 +53,31 @@ def preprocess_night(img_bgr: np.ndarray,
     return gray
 
 
-def compute_energy(gray: np.ndarray) -> np.ndarray:
-    """
-    Improved skyline energy with thin-edge suppression.
-    """
+def compute_energy(gray):
+    H, W = gray.shape
+    g = gray.astype(np.float32)
 
-    # --- Multi-scale vertical gradients ---
-    gy_small = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
-    gy_large = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=9)
+    # Vertical gradient
+    gy = cv2.Sobel(g, cv2.CV_32F, 0, 1, ksize=5)
 
-    # Larger kernel suppresses tiny lights
-    energy = 1.0 * abs(gy_small) + 1.2 * abs(gy_large)
+    energy = np.zeros_like(g)
 
-    # Thin edge suppression
-    edges = cv2.Canny(gray, 50, 150)
+    window = 40
 
-    # Dilate edges to measure thickness
-    dilated = cv2.dilate(edges, np.ones((5, 5), np.uint8))
+    for y in range(window, H - window):
+        above = g[y-window:y]
+        below = g[y:y+window]
 
-    # Thin edges = edges that disappear when dilated
-    thin_edges = edges.astype(np.float32) - dilated.astype(np.float32) * 0.3
+        var_above = np.var(above, axis=0)
+        var_below = np.var(below, axis=0)
 
-    # Subtract thin-edge penalty from energy
-    energy = energy - 0.8 * thin_edges
+        region_score = np.maximum(var_below - var_above, 0)
 
-    # --- Normalize to [0,1] ---
-    e_min, e_max = energy.min(), energy.max()
-    energy = (energy - e_min) / (e_max - e_min + 1e-6)
+        energy[y] = 1.3*np.abs(gy[y]) + 1.0*region_score
+
+    # Normalize
+    energy -= energy.min()
+    energy /= (energy.max() + 1e-6)
 
     return energy
 
@@ -123,8 +121,8 @@ def find_skyline_path(energy: np.ndarray,
     # Precompute smoothness penalties for jumps
     # penalty(dy) = smoothness * (dy^2) normalized
     jumps = np.arange(-max_jump, max_jump + 1, dtype=np.int32)
-    penalties = smoothness * (jumps.astype(np.float32) ** 2) / max(1.0, float(max_jump * max_jump))
-
+    penalties = smoothness * (np.abs(jumps).astype(np.float32)) / max(1.0, float(max_jump)) 
+    
     # Forward pass
     for x in range(1, W):
         for j, dy in enumerate(jumps):
@@ -170,7 +168,7 @@ def detect_skyline(img_bgr: np.ndarray,
 
     gray = preprocess_night(img_bgr, use_clahe=True, gamma=gamma, denoise_h=denoise_h)
     energy = compute_energy(gray)
-
+            
     y_path = find_skyline_path(
         energy,
         top_bias=top_bias,
@@ -178,7 +176,7 @@ def detect_skyline(img_bgr: np.ndarray,
         max_jump=max_jump
     )
 
-    y_path = savgol_filter(y_path, 51, 3)
+    y_path = savgol_filter(y_path, 21, 3)
     y_path = np.round(y_path).astype(int)
 
     sky_mask = skyline_to_mask(gray.shape[0], gray.shape[1], y_path)
@@ -211,17 +209,15 @@ if __name__ == "__main__":
 
     y_path, sky_mask, dbg = detect_skyline(
         img,
-        gamma=1.5,
-        denoise_h=15,
-        top_bias=0.2,
-        smoothness=2.0,
-        max_jump=20
+        gamma=1.5,          # gamma: How bright the 
+        denoise_h=15,       # denoise_h: Parameter for NLM denoising
+        top_bias=0.2,       # top_bias: How much we favor the top of the image
+        smoothness=2.0,     # smoothness: How smooth we want the skyline to be
+        max_jump=30         # max_jump: How big peaks can be
     )
 
     cv2.imwrite(f"{args.out_prefix}_mask.png", sky_mask)
     cv2.imwrite(f"{args.out_prefix}_overlay.png", dbg["overlay"])
-    cv2.imwrite(f"{args.out_prefix}_energy.png", dbg["energy"])
-    cv2.imwrite(f"{args.out_prefix}_gray.png", dbg["gray"])
     print("Wrote:",
           f"{args.out_prefix}_mask.png,",
           f"{args.out_prefix}_overlay.png,",
