@@ -29,13 +29,26 @@ def get_sky_mask(img):
     cv2.imwrite("outputs/skyline.png", dbg["overlay"])
     return sky_mask
 
-def enhance_image(im):
+def enhance_image(img):
+    # Generate Sky Mask
+    sky_mask = get_sky_mask(img)
+
+    # Denoise
+    img = denoise(img)
+    cv2.imwrite("outputs/denoise.png", img)
+
     # Convert image to float for more precision in adjustments
-    im = im.astype(np.float32)
-    im = adjust_exposure(im)
-    im = remove_red_lights(im)
-    im = adjust_white_balance(im)
-    return im
+    img = img.astype(np.float32)
+    img = adjust_exposure(img)
+    img = remove_red_lights(img)
+    img = adjust_white_balance(img)
+
+    # Color the sky blue LOL
+    img[sky_mask > 0] = [150, 134, 114]
+
+    # Clip to 8-bit map
+    img = np.clip(img, 0, 255).astype(np.uint8)
+    return img
 
 def calc_mse(im1, im2):
     if im1.shape != im2.shape:
@@ -61,20 +74,8 @@ if __name__ == "__main__":
     # Import Image
     img = cv2.imread("images/night.jpg")
 
-    # Generate Sky Mask
-    sky_mask = get_sky_mask(img)
-
-    # Denoise
-    img = denoise(img)
-    cv2.imwrite("outputs/denoise.png", img)
-
     # Apply enhancements
     im_enhance = enhance_image(img)
-
-    # Clip to 8-bit map
-    im_enhance = np.clip(im_enhance, 0, 255).astype(np.uint8)
-    im_enhance[sky_mask > 0] = [150, 134, 114]
-
     cv2.imwrite("outputs/enhance.png", im_enhance)
 
     # Calculate MSE
