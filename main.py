@@ -4,6 +4,31 @@ from diff_map import generate_diff_maps
 from sky_detection import detect_skyline
 from adjustments import *
 
+def get_sky_mask(img):
+
+    # Preprocessing
+    mask_img = img.copy()
+    mask_img = denoise(mask_img)
+    mask_img = adjust_exposure(mask_img)
+    mask_img = np.clip(mask_img, 0, 255).astype(np.uint8)
+    mask_img = remove_red_lights(mask_img)
+    mask_img = mask_img.astype(np.uint8)
+    
+    cv2.imwrite("outputs/pre_mask.png", mask_img)
+    # Generate sky mask
+    _, sky_mask, dbg = detect_skyline(
+        mask_img,
+        gamma=1.5,
+        denoise_h=15,
+        top_bias=0.2,
+        smoothness=2.0,
+        max_jump=30
+    )
+
+    mask_img[sky_mask > 0] = [150, 134, 114]
+    cv2.imwrite("outputs/skyline.png", dbg["overlay"])
+    return sky_mask
+
 def enhance_image(im):
     # Convert image to float for more precision in adjustments
     im = im.astype(np.float32)
@@ -36,15 +61,8 @@ if __name__ == "__main__":
     # Import Image
     img = cv2.imread("images/night.jpg")
 
-    # Generate sky mask
-    _, sky_mask, _ = detect_skyline(
-        img,
-        gamma=1.5,
-        denoise_h=15,
-        top_bias=0.2,
-        smoothness=2.0,
-        max_jump=20
-    )
+    # Generate Sky Mask
+    sky_mask = get_sky_mask(img)
 
     # Denoise
     img = denoise(img)
