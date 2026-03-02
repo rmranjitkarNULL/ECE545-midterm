@@ -29,6 +29,9 @@ def generate_diff_maps(im1, im2, output_dir="outputs"):
     cv2.imwrite(output_dir/"mse_green.png", sq_g_vis)
     cv2.imwrite(output_dir/"mse_blue.png", sq_b_vis)
 
+    color = cv2.merge([sq_b_vis, sq_g_vis, sq_r_vis])
+    cv2.imwrite(output_dir/"mse_all.png", color)
+
 if __name__ == "__main__":
     night = cv2.imread("images/basic_ps.jpg")
     day = cv2.imread("images/day.jpg")
